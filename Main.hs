@@ -12,11 +12,13 @@ finished   :: Board -> Bool
 finished b = False 
 
 move             :: Player -> (Int, Int) -> (Int, Int) -> Board -> Either String Board
-move p from to b = if isValid source to b
+move p from to b = if isValid p source target b
                    then Right b''
                    else Left "Invalid move"
                        where piece  = fromJust $ lookup from b
                              source = (from, piece)
+                             piece' = fromJust $ lookup to b
+                             target = (to, piece')
                              b'     = setPiece p (from, piece) to b
                              b''    = setPiece p (to, Nothing) from b'
                              
@@ -42,7 +44,7 @@ letterToNum  _  = 8
 getMoveCoords :: String -> IO ((Int, Int), (Int, Int))
 getMoveCoords msg = do putStr msg
                        x <- getLine
-                       if (length x) == 4
+                       if (length x) == 4 && not (isValidCoords (fmt $ map letterToNum x))
                        then return . fmt $ map letterToNum x
                        else getMoveCoords "Invalid input. please try again: "
                            where fmt [x1, y1, x2, y2] = ((x1,y1), (x2, y2))
@@ -59,9 +61,7 @@ gameLoop color b msg = do
                             Nothing -> putStrLn ""
                         putStrLn $ writeBoard b
                         coords <- getMoveCoords ((show color) ++ ": Enter your move in the form: 'xyxy': ")
-                        if isValidCoords coords
-                        then getMoveCoords "Invalid input. please try again: "
-                        else case move color (fst coords) (snd coords) b of
+                        case move color (fst coords) (snd coords) b of
                             Right b'         -> gameLoop (nextColor color) b' Nothing
 --                            Left  "Finished" -> putStrLn "Finished"  -- Exit
                             Left  msg        -> gameLoop color b (Just msg)

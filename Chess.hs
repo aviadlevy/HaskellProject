@@ -44,7 +44,7 @@ initialBoard = unlines ["rnbkqbnr"
 readBoard   :: String -> Board
 readBoard s = zip coords pieces
               where coords    = [(x,y) | y <- [0..7] , x <- [0..7]] 
-                    pieces    = map readSquare $ filter (/= '\n') initialBoard
+                    pieces    = map readSquare $ filter (/= '\n') s
 
 writeBoard   :: Board -> String 
 writeBoard b = "  ABCDEFGH\n" ++ (format 1 $ map writeSquareUnicode $ map snd b) 
@@ -55,53 +55,35 @@ writeBoard b = "  ABCDEFGH\n" ++ (format 1 $ map writeSquareUnicode $ map snd b)
 readSquare  :: Char -> Maybe BoardPiece
 readSquare c = 
     case c of 
-        'r' -> Just (Black, Rook)
-        'n' -> Just (Black, Knight)
-        'b' -> Just (Black, Bishop)
-        'k' -> Just (Black, King)
-        'q' -> Just (Black, Queen)
-        'p' -> Just (Black, Pawn)
-        'R' -> Just (White, Rook)
-        'N' -> Just (White, Knight)
-        'B' -> Just (White, Bishop)
-        'K' -> Just (White, King)
-        'Q' -> Just (White, Queen)
-        'P' -> Just (White, Pawn)
+        'R' -> Just (Black, Rook)
+        'N' -> Just (Black, Knight)
+        'B' -> Just (Black, Bishop)
+        'K' -> Just (Black, King)
+        'Q' -> Just (Black, Queen)
+        'P' -> Just (Black, Pawn)
+        'r' -> Just (White, Rook)
+        'n' -> Just (White, Knight)
+        'b' -> Just (White, Bishop)
+        'k' -> Just (White, King)
+        'q' -> Just (White, Queen)
+        'p' -> Just (White, Pawn)
         otherwise -> Nothing
 
--- Inverse of readSquare
-writeSquare  :: Maybe BoardPiece -> Char
-writeSquare p = 
-    case p of 
-        Just (Black, Rook)   -> 'r'
-        Just (Black, Knight) -> 'n'
-        Just (Black, Bishop) -> 'b'
-        Just (Black, King)   -> 'k'
-        Just (Black, Queen)  -> 'q'
-        Just (Black, Pawn)   -> 'p'
-        Just (White, Rook)   -> 'R'
-        Just (White, Knight) -> 'N'
-        Just (White, Bishop) -> 'B'
-        Just (White, King)   -> 'K'
-        Just (White, Queen)  -> 'Q'
-        Just (White, Pawn)   -> 'P'
-        otherwise -> '.'
-
 writeSquareUnicode  :: Maybe BoardPiece -> Char
-writeSquareUnicode p = 
+writeSquareUnicode p =
     case p of 
-        Just (Black, Rook)   -> '\9820'  
-        Just (Black, Knight) -> '\9822' 
-        Just (Black, Bishop) -> '\9821' 
-        Just (Black, King)   -> '\9818' 
-        Just (Black, Queen)  -> '\9819' 
-        Just (Black, Pawn)   -> '\9823'
-        Just (White, Rook)   -> '\9814' 
-        Just (White, Knight) -> '\9816'
-        Just (White, Bishop) -> '\9815' 
-        Just (White, King)   -> '\9812' 
-        Just (White, Queen)  -> '\9813' 
-        Just (White, Pawn)   -> '\9817' 
+        Just (Black, Rook)   -> '\9814'
+        Just (Black, Knight) -> '\9816'
+        Just (Black, Bishop) -> '\9815'
+        Just (Black, King)   -> '\9812'
+        Just (Black, Queen)  -> '\9813'
+        Just (Black, Pawn)   -> '\9817'
+        Just (White, Rook)   -> '\9820'
+        Just (White, Knight) -> '\9822'
+        Just (White, Bishop) -> '\9821'
+        Just (White, King)   -> '\9818'
+        Just (White, Queen)  -> '\9819'
+        Just (White, Pawn)   -> '\9823'
         otherwise -> '.'
 
 setPiece            :: Player -> BoardEntry -> (Int, Int) -> Board -> Board 
@@ -112,9 +94,14 @@ setPiece p pc loc b = let i = fromJust $ elemIndex (loc, fromJust $ lookup loc b
 --getPiece :: (Int, Int) -> Board -> BoardEntry
 --getPiece (x, y) b = b !! (x * 8 + y)
 
-isValid (from, Just (c, Pawn)) to board = isValidPawn c from to board
+isValid White (_, Just (Black, _)) _ _ = False
+isValid Black (_, Just (White, _)) _ _ = False
+
+isValid White (from, Just (c, Pawn)) (to, Just (Black, targetPiece)) board = isValidPawn c from to True board
+isValid Black (from, Just (c, Pawn)) (to, Just (White, targetPiece)) board = isValidPawn c from to True board
+isValid player (from, Just (c, Pawn)) (to, Nothing) board = isValidPawn c from to False board
 --isValid (from, Just (c, Rook)) to board = isValidRook c from to board
-isValid _ _ _ = False
+--isValid _ _ _ = False
 
 getForward Black (x, y) = (x, y + 1)
 getForward White (x, y) = (x, y - 1)
@@ -132,4 +119,7 @@ getBackwardDiagonals c l = getForwardDiagonals (nextColor c) l
 --   If dest is in bounds and
 --   If dest is forward, then there is no piece or
 --   If dest is diagonal, then there is an enemy piece
-isValidPawn c from to b = False
+isValidPawn White (x1, 1) (x2, 3) False b = x1 == x2 && (fromJust $ lookup (x1, 2) b) == Nothing
+isValidPawn Black (x1, 6) (x2, 4) False b = x1 == x2 && (fromJust $ lookup (x1, 5) b) == Nothing
+isValidPawn _ (x1, y1) (x2, y2) False b = abs (y1 - y2) == 1
+--isValidPawn _ _ _ _ = False
