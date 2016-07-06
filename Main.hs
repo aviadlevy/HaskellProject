@@ -56,10 +56,10 @@ isValidCoords ((x1,y1), (x2, y2)) = 8 `elem` [x1, y1, x2, y2]
 
 gameLoop color b msg = do 
                         clearScreen
+                        putStrLn $ writeBoard b
                         case msg of
                             Just msg -> putStrLn msg
                             Nothing -> putStrLn ""
-                        putStrLn $ writeBoard b
                         coords <- getMoveCoords ((show color) ++ ": Enter your move in the form: 'xyxy': ")
                         case move color (fst coords) (snd coords) b of
                             Right b'         -> gameLoop (nextColor color) b' Nothing
