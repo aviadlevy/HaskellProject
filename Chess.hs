@@ -92,8 +92,10 @@ setPiece p pc loc b = let i = fromJust $ elemIndex (loc, fromJust $ lookup loc b
                       in x ++ [(loc, snd pc)] ++ ys
 
 isValid :: Player -> ((Int, Int), Maybe BoardPiece) -> ((Int, Int), Maybe BoardPiece) -> Board -> Bool
+--check that the player playing the right piece
 isValid White (_, Just (Black, _)) _ _ = False
 isValid Black (_, Just (White, _)) _ _ = False
+--check that destination is not from the same color
 isValid White _ (_, Just (White, _)) _ = False
 isValid Black _ (_, Just (Black, _)) _ = False
 
@@ -101,7 +103,7 @@ isValid Black _ (_, Just (Black, _)) _ = False
 isValid _ (from, Just (c, Pawn)) (to, Just (cTarget, _)) board = isValidPawn c from to cTarget True board
 isValid _ (from, Just (c, Pawn)) (to, Nothing) board = isValidPawn c from to c False board
 isValid _ (from, Just (c, Rook)) (to, _) board = isValidRook c from to board
---isValid _ (from, Just (c, Knight)) (to, _) board = isValidKnight c from to board
+isValid _ (from, Just (c, Knight)) (to, _) board = isValidKnight c from to board
 isValid _ (from, Just (c, Bishop)) (to, _) board = isValidBishop c from to board
 isValid _ (from, Just (c, Queen)) (to, _) board = isValidQueen c from to board
 isValid _ (from, Just (c, King)) (to, _) board = isValidKing c from to board
@@ -175,4 +177,6 @@ isValidQueen c (x1, y1) (x2, y2) board | x1 == x2                       = isClea
 --   check if dest is "diagonal line" and the line is clear
 isValidKing c (x1, y1) (x2, y2) board = (abs (x1 - x2) <= 1 && abs (y1 - y2) <= 1) && isClear (x1, y1) (x2, y2) board
 
---isValidKing c (x1, y1) (x2, y2) board = (abs (x1 - x2) <= 1 && abs (y1 - y2) <= 1) && isClear (x1, y1) (x2, y2) board
+-- | Knight move
+--   check if dest is knight move. not necessery to check if the way is clear
+isValidKnight c (x1, y1) (x2, y2) board = (abs (x1 - x2) == 1 && abs (y1 - y2) == 2) || (abs (x1 - x2) == 2 && abs (y1 - y2) == 1)
