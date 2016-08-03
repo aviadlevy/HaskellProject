@@ -87,10 +87,12 @@ writeSquareUnicode p =
         otherwise -> '.'
 
 setPiece            :: Player -> BoardEntry -> (Int, Int) -> Board -> Board 
+setPiece White ((x, 6), Just (White, Pawn)) loc b =  setPiece White ((x, 6), Just (White, Queen)) loc b
+setPiece Black ((x, 1), Just (Black, Pawn)) loc b =  setPiece Black ((x, 1), Just (Black, Queen)) loc b
 setPiece p pc loc b = let i = fromJust $ elemIndex (loc, fromJust $ lookup loc b) b
                           (x,_:ys) = splitAt i b 
                       in x ++ [(loc, snd pc)] ++ ys
-
+                      
 isValid :: Player -> ((Int, Int), Maybe BoardPiece) -> ((Int, Int), Maybe BoardPiece) -> Board -> Bool
 --check that the player playing the right piece
 isValid White (_, Just (Black, _)) _ _ = False
@@ -110,16 +112,42 @@ isValid _ (from, Just (c, King)) (to, _) board = isValidKing c from to board
 
 isValid _ _ _ _ = False
 
+canMove c from to board | from == (8, 8) = False
+                        | to   == (8, 8) = canMove c (getNext from) (0, 0) board
+                        | isValid c (readPiece from board) (readPiece to board) board = True
+                        | otherwise = canMove c from (getNext to) board
+                        
+afterMoveBoard p from to b = b''
+                             where piece  = fromJust $ lookup from b
+                                   source = (from, piece)
+                                   piece' = fromJust $ lookup to b
+                                   target = (to, piece')
+                                   b'     = setPiece p (from, piece) to b
+                                   b''    = setPiece p (to, Nothing) from b'
+
+readPiece :: (Int, Int) -> Board -> BoardEntry
+readPiece (x, y) b = ((x, y), fromJust $ lookup (x, y) b)
+
+findKing :: Player -> (Int, Int) -> Board -> (Int, Int)
+findKing color (x, y) b | snd (readPiece (x, y) b) == Just (color, King) = fst (readPiece (x, y) b)
+                        | otherwise = findKing color (getNext (x, y)) b
+
+isChess color king b = isChess' color king (readPiece (0,0) b) b
+
+isChess' color king from b | fst from == (8, 8) = False
+                           | isValid (nextColor color) from (king, Just(color, King)) b = True
+                           | otherwise = isChess' color king (readPiece (getNext (fst from)) b) b
+                           
+getNext (x, y) | (x, y) == (7, 7) = (8, 8)
+               | x == 7 = (0, y + 1)
+               | otherwise = (x + 1, y)
+
 getForward Black (x, y) = (x, y - 1)
 getForward White (x, y) = (x, y + 1)
---getBackward c l         = getForward (nextColor c) l
---getLeft  (x, y)         = (x - 1, y)
---getRight (x, y)         = (x + 1, y)
 getForwardDiagonals c l@(x, y) = (left, right)
                                  where (fx, fy) = getForward c l
                                        left     = (fx - 1, fy)
                                        right    = (fx + 1, fy)
---getBackwardDiagonals c l = getForwardDiagonals (nextColor c) l
 
 
 isClear :: (Int, Int) -> (Int, Int) -> Board -> Bool
@@ -153,30 +181,30 @@ isClear (x1, y1) (x2, y2) b | x1 == x2  = fix (\check y ->  -- forward/ backward
 -- | Pawn move
 --   If dest is forward, then there is no piece or
 --   If dest is diagonal, then there is an enemy piece
-isValidPawn White (x1, 1) (x2, 3) _ False board = x1 == x2 && isClear (x1, 1) (x2, 3) board
-isValidPawn Black (x1, 6) (x2, 4) _ False board = x1 == x2 && isClear (x1, 6) (x2, 3) board
-isValidPawn c from to _ False b                 = (getForward c from) == to
-isValidPawn c from to cTarget True b            = to `elem` (getForwardDiagonals c from) && c /= cTarget
+isValidPawn White (x1, 1) (x2, 3) _ False board = x1 == x2 && isClear (x1, 1) (x2, 3) board && not (isChess White (findKing White (0, 0) board) (afterMoveBoard White (x1, 1) (x2, 3) board))
+isValidPawn Black (x1, 6) (x2, 4) _ False board = x1 == x2 && isClear (x1, 6) (x2, 3) board && not (isChess Black (findKing Black (0, 0) board) (afterMoveBoard Black (x1, 6) (x2, 4) board))
+isValidPawn c from to _ False board                 = (getForward c from) == to && not (isChess c (findKing c (0, 0) board) (afterMoveBoard c from to board))
+isValidPawn c from to cTarget True board            = to `elem` (getForwardDiagonals c from) && c /= cTarget && not (isChess c (findKing c (0, 0) board) (afterMoveBoard c from to board))
 
 -- | Rook move
 --   check if dest is "stright line" and the line is clear
-isValidRook c (x1, y1) (x2, y2) board = ((x1 == x2 && y1 /= y2) || (x1 /= x2 && y1 == y2)) && isClear (x1, y1) (x2, y2) board
+isValidRook c (x1, y1) (x2, y2) board = ((x1 == x2 && y1 /= y2) || (x1 /= x2 && y1 == y2)) && isClear (x1, y1) (x2, y2) board && not (isChess c (findKing c (0, 0) board) (afterMoveBoard c (x1, y1) (x2, y2) board))
 
 -- | Bishop move
 --   check if dest is "diagonal line" and the line is clear
-isValidBishop c (x1, y1) (x2, y2) board = (abs (x1 - x2) == abs (y1 - y2)) && isClear (x1, y1) (x2, y2) board
+isValidBishop c (x1, y1) (x2, y2) board = (abs (x1 - x2) == abs (y1 - y2)) && isClear (x1, y1) (x2, y2) board && not (isChess c (findKing c (0, 0) board) (afterMoveBoard c (x1, y1) (x2, y2) board))
 
 -- | Queen move
 --   check if dest is "diagonal line" or "stright line" and the line is clear
-isValidQueen c (x1, y1) (x2, y2) board | x1 == x2                       = isClear (x1, y1) (x2, y2) board
-                                       | y1 == y2                       = isClear (x1, y1) (x2, y2) board
-                                       | abs (x1 - x2) == abs (y1 - y2) = isClear (x1, y1) (x2, y2) board
+isValidQueen c (x1, y1) (x2, y2) board | x1 == x2                       = isClear (x1, y1) (x2, y2) board && not (isChess c (findKing c (0, 0) board) (afterMoveBoard c (x1, y1) (x2, y2) board))
+                                       | y1 == y2                       = isClear (x1, y1) (x2, y2) board && not (isChess c (findKing c (0, 0) board) (afterMoveBoard c (x1, y1) (x2, y2) board))
+                                       | abs (x1 - x2) == abs (y1 - y2) = isClear (x1, y1) (x2, y2) board && not (isChess c (findKing c (0, 0) board) (afterMoveBoard c (x1, y1) (x2, y2) board))
                                        | otherwise                      = False
                                        
 -- | King move
 --   check if dest is "diagonal line" and the line is clear
-isValidKing c (x1, y1) (x2, y2) board = (abs (x1 - x2) <= 1 && abs (y1 - y2) <= 1) && isClear (x1, y1) (x2, y2) board
+isValidKing c (x1, y1) (x2, y2) board = (abs (x1 - x2) <= 1 && abs (y1 - y2) <= 1) && isClear (x1, y1) (x2, y2) board && not (isChess c (x2, y2) board)
 
 -- | Knight move
 --   check if dest is knight move. not necessery to check if the way is clear
-isValidKnight c (x1, y1) (x2, y2) board = (abs (x1 - x2) == 1 && abs (y1 - y2) == 2) || (abs (x1 - x2) == 2 && abs (y1 - y2) == 1)
+isValidKnight c (x1, y1) (x2, y2) board = ((abs (x1 - x2) == 1 && abs (y1 - y2) == 2) || (abs (x1 - x2) == 2 && abs (y1 - y2) == 1)) && not (isChess c (findKing c (0, 0) board) (afterMoveBoard c (x1, y1) (x2, y2) board))
