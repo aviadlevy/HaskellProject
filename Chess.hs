@@ -29,7 +29,7 @@ getMoveCoords msg = do putStr msg
                        x <- getLine
                        if (length x) == 4 && not (isValidCoords (fmt $ map letterToNum x))
                        then return . fmt $ map letterToNum x
-                       else getMoveCoords "Invalid input. please try again: "
+                       else getMoveCoords "Invalid input. The move should be in the form of: [A-H][1-8][A-H][1-8].\nplease try again: "
                            where fmt [x1, y1, x2, y2] = ((x1,y1), (x2, y2))
 
 
@@ -52,13 +52,13 @@ gameLoop color b msg = do
                                    Just msg -> putStrLn msg
                                    Nothing -> putStrLn ""
                                when (msg == Just "CheckMate!") exitSuccess
-                               coords <- getMoveCoords ((show color) ++ ": Enter your move in the form: 'xyxy': ")
+                               coords <- getMoveCoords ((show color) ++ ": Enter your move: ")
                                case move color (fst coords) (snd coords) b of
                                    Right b'         -> checkChess (nextColor color) b'
                                    Left  msg        -> gameLoop color b (Just msg)
 
 main = let board = readBoard initialBoard
-       in gameLoop Board.White board Nothing
+       in gameLoop Board.White board (Just "The move should be in the form of: [A-H][1-8][A-H][1-8]")
 
 -- conver letter to a number       
 letterToNum :: Char -> Int
