@@ -5,7 +5,9 @@ Chess Game
 
 My project to **67452 FUNCTIONAL PROGRAMMING: HASKELL** course at **Hebrew University of Jerusalem**
 
-This will work only on Linux, but I may add support in the future for Windows as well.
+.. image:: image.jpg
+
+This will work only on Linux [*]_ , but I may add support in the future for Windows as well.
 
 To run the game just enter ghci and:
 ::
@@ -15,3 +17,10 @@ To run the game just enter ghci and:
 You'll understand how to play while playing.
 
 Have FUN!!
+
+.. [*] Due to special terminal functionality and unicode symbols
+
+:Author: 
+    Aviad Levy
+
+:Version: 1.0
