@@ -16,8 +16,8 @@ To run the game just enter ghci and:
 
 To run this chess game using Docker, follow these steps:
 ::
-docker build -t haskell-chess .
-docker run -it haskell-chess
+  docker build -t haskell-chess .
+  docker run -it haskell-chess
 
 You'll understand how to play while playing.
 
